@@ -1,0 +1,20 @@
+{
+  "name": "cloud-portfolio-project",
+  "version": "1.0.0",
+  "description": "OSU CS493 Cloud Application Development Portfolio Project",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/omoi-sys/cloud-portfolio-project.git"
+  },
+  "author": "Abraham Serrato Meza",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/omoi-sys/cloud-portfolio-project/issues"
+  },
+  "homepage": "https://github.com/omoi-sys/cloud-portfolio-project#readme"
+}
