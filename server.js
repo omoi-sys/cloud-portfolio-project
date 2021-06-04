@@ -15,7 +15,7 @@ const router = express.Router();
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
-app.use(express.static('public'));
+app.use(express.static(__dirname + '/public'));
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -36,7 +36,7 @@ const url = oauth2Client.generateAuthUrl({
   scope: SCOPE
 });
 
-port_user = (auth_id) => {
+post_user = (auth_id) => {
   let key = datastore.key('User');
   const new_user = {
     'auth_id': auth_id
@@ -64,7 +64,7 @@ router.get('/userinfo', (req, res) => {
     const ticket = client.verifyIdToken({
       idToken: tokens['tokens']['id_token'],
       audience: CLIENT_ID
-    }).then( (ticken) => {
+    }).then( (ticket) => {
       const payload = ticket.getPayload();
       const userid = payload['sub'];
       post_user(userid).then( (user_id) => {
