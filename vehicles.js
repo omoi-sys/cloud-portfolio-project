@@ -13,6 +13,9 @@ get_vehicle = (vehicle_id) => {
 }
 
 // Get all vehicles
-get_vehicles = (req) => {
+/*get_vehicles = (req) => {
   let query = datastore.createQuery(VEHICLE).
-}
+}*/
+
+// export module
+module.exports = router;

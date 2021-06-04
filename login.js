@@ -5,17 +5,17 @@ const { OAuth2Cleint } = require('google-auth-library');
 const crypto = require('crypto');
 require('dotenv').config();
 const request = require('request');
-const frontApp = express();
+const app = express();
 
 const ds = require('./datastore');
 const datastore = ds.datastore;
 
 const router = express.Router();
 
-frontApp.engine('handlebars', handlebars);
-frontApp.set('view engine', 'handlebars');
+app.engine('handlebars', handlebars);
+app.set('view engine', 'handlebars');
 
-frontApp.use(express.static('public'));
+app.use(express.static('public'));
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -73,6 +73,8 @@ router.get('/userinfo', (req, res) => {
     });
   });
 });
+
+
 
 // export module
 module.exports = router;
