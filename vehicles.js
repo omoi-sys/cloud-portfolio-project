@@ -116,6 +116,18 @@ put_vehicle = (vehicle_id, make, model, type, capacity, owner, loads) => {
   return datastore.save({ 'key': key, 'data': update_vehicle });
 }
 
+assign_load = (vehicle, vehicle_id, load, load_id) => {
+  const load_key = datastore.key(['Load', parseInt(load_id, 10)]);
+  const vehicle_key = datastore.key([VEHICLE, parseInt(vehicle_id, 10)]);
+
+  vehicle.loads.push(load_id);
+  load.carrier = vehicle_id;
+
+  return datastore.save({ 'key': load_key, 'data': load }).then(() => {
+    return datastore.save({ 'key': vehicle_key, 'data': vehicle }).then(() => {return});
+  });
+}
+
 // Delete a vehicle while updating loads if necessary
 delete_vehicle = (vehicle_id, vehicle) => {
   if (vehicle.loads.length > 0) {
@@ -330,10 +342,10 @@ router.patch('/:vehicle_id', (req, res) => {
     }
   }
 
-  if (typeof req.body.make === 'undefined' || typeof req.body.make !== 'string' ||
-  typeof req.body.model === 'undefined' || typeof req.body.model !== 'string' || 
-  typeof req.body.type === 'undefined' || typeof req.body.type !== 'string' || 
-  typeof req.body.capacity === 'undefined' || typeof req.body.capacity !== 'number') {
+  if (typeof req.body.make !== 'undefined' && typeof req.body.make !== 'string' ||
+  typeof req.body.model !== 'undefined' && typeof req.body.model !== 'string' || 
+  typeof req.body.type !== 'undefined' && typeof req.body.type !== 'string' || 
+  typeof req.body.capacity !== 'undefined' && typeof req.body.capacity !== 'number') {
     res.status(400).send({
       'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
     });
@@ -385,12 +397,73 @@ router.patch('/:vehicle_id', (req, res) => {
 
 // Update a vehicle requiring all params
 router.put('/:vehicle_id', (req, res) => {
-  
+  if (typeof req.header('authorization') === 'undefined') {
+    res.status(401).end();
+  }
+
+  if (typeof req.body.id !== 'undefined') {
+    if (req.body.id.toString() !== req.params.vehicle_id) {
+      res.status(400).send({
+        'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
+      });
+    }
+  }
+
+  const tokenH = req.header('authorization').split(' ');
+  const token = tokenH[1];
+  const ticket = client.verifyIdToken({
+    idToken: token,
+    audience: CLIENT_ID
+  }).then((ticket) => {
+    const payload = ticket.getPayload();
+    const userid = payload['sub'];
+    if (typeof userid === 'undefined') {
+      res.status(403).json({
+        'Error': 'Authorization token does not match user info.'
+      });
+    }
+    
+    if (typeof req.body.make === 'undefined' || typeof req.body.make !== 'string' ||
+    typeof req.body.model === 'undefined' || typeof req.body.model !== 'string' || 
+    typeof req.body.type === 'undefined' || typeof req.body.type !== 'string' || 
+    typeof req.body.capacity === 'undefined' || typeof req.body.capacity !== 'number') {
+      res.status(400).send({
+        'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
+      });
+    } else {
+      if (Object.keys(req.body).length < 4) {
+        res.status(400).send({
+          'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
+        });
+      } else {
+        get_vehicle(req.params.vehicle_id).then((vehicle) => {
+          if (typeof vehicle === 'undefined') {
+            res.status(404).send({
+              'Error': 'No vehicle with this vehicle_id exists'
+            });
+          }
+
+          if (vehicle.owner === userid) {
+            put_vehicle(req.params.vehicle_id, req.body.make, req.body.model, req.body.type, req.body.capacity, userid, vehicle.loads).then( (vehicle) => {
+              res.location(link + '/vehicles/' + vehicle.id);
+              res.status(303).send(vehicle);
+            });
+          } else {
+            res.status(403).send({
+              'Error': 'Authorization token does not match user info.'
+            });
+          }
+        });
+      }
+    }
+  }).catch((error) => {
+    res.status(401).end();
+  });
 });
 
 // Delete a vehicle, any loads loaded will be unloaded first
 router.delete('/:vehicle_id', (req, res) => {
-
+  
 });
 
 // Method Not Allowed
@@ -407,12 +480,108 @@ router.put('/', (req, res) => {
 
 // Assign a load to a vehicle
 router.put('/:vehicle_id/loads/:load_id', (req, res) => {
+  if (typeof req.header('authorization') === 'undefined') {
+    res.status(401).end();
+  }
 
+  const tokenH = req.header('authorization').split(' ');
+  const token = tokenH[1];
+  const ticket = client.verifyIdToken({
+    idToken: token,
+    audience: CLIENT_ID
+  }).then((ticket) => {
+    const payload = ticket.getPayload();
+    const userid = payload['sub'];
+    if (typeof userid === 'undefined') {
+      res.status(403).json({
+        'Error': 'Authorization token does not match user info.'
+      });
+    }
+
+    get_vehicle(req.params.vehicle_id).then((vehicle) => {
+      if (typeof vehicle === 'undefined') {
+        res.status(404).send({
+          'Error': 'The specified vehicle and/or load does not exist'
+        });
+      }
+
+      if (vehicle.owner === userid) {
+        const load_key = datastore.key(['Load', parseInt(req.params.load_id, 10)]);
+        const load = datastore.get(load_key).then( load => {
+          if (typeof load[0] === 'undefined') {
+            res.status(404).send({
+              'Error': 'The specified vehicle and/or load does not exist'
+            });
+          }
+
+          if (load[0].carrier === null) {
+            assign_load(vehicle, req.params.vehicle_id, load[0], req.params.load_id).then(() => {
+              res.status(204).end();
+            });
+          } else {
+            res.status(403).send({
+              'Error': 'The load must be removed from vehicle first'
+            });
+          }
+        });
+      }
+    });
+  }).catch((error) => {
+    res.status(401).end();
+  });
 });
 
 // Unassign a load from a vehicle
 router.delete('/:vehicle_id/loads/:load_id', (req, res) => {
+  if (typeof req.header('authorization') === 'undefined') {
+    res.status(401).end();
+  }
 
+  const tokenH = req.header('authorization').split(' ');
+  const token = tokenH[1];
+  const ticket = client.verifyIdToken({
+    idToken: token,
+    audience: CLIENT_ID
+  }).then((ticket) => {
+    const payload = ticket.getPayload();
+    const userid = payload['sub'];
+    if (typeof userid === 'undefined') {
+      res.status(403).json({
+        'Error': 'Authorization token does not match user info.'
+      });
+    }
+
+    get_vehicle(req.params.vehicle_id).then((vehicle) => {
+      if (typeof vehicle === 'undefined') {
+        res.status(404).send({
+          'Error': 'No load with this load_id assigned to the vehicle with this vehicle_id'
+        });
+      }
+
+      if (vehicle.owner === userid) {
+        const load_key = datastore.key(['Load', parseInt(req.params.load_id, 10)]);
+        const load = datastore.get(load_key).then( load => {
+          if (typeof load[0] === 'undefined') {
+            res.status(404).send({
+              'Error': 'The specified vehicle and/or load does not exist'
+            });
+          }
+
+          if (load[0].carrier === req.params.vehicle_id) {
+            remove_load(vehicle, req.params.vehicle_id, load[0], req.params.load_id).then(() => {
+              res.status(204).end();
+            });
+          } else {
+            res.status(404).send({
+              'Error': 'No load with this load_id assigned to the vehicle with this vehicle_id'
+            });
+          }
+        });
+      }
+    });
+  }).catch((error) => {
+    res.status(401).end();
+  });
 });
 
 /* =============== End of Controller Functions =============== */
