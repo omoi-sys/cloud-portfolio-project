@@ -322,12 +322,70 @@ router.get('/:vehicle_id/loads', (req, res) => {
 
 // Update a vehicle with any number of params
 router.patch('/:vehicle_id', (req, res) => {
-  
+  if (typeof req.body.id !== 'undefined') {
+    if (req.body.id.toString() !== req.params.vehicle_id) {
+      res.status(400).send({
+        'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
+      });
+    }
+  }
+
+  if (typeof req.body.make === 'undefined' || typeof req.body.make !== 'string' ||
+  typeof req.body.model === 'undefined' || typeof req.body.model !== 'string' || 
+  typeof req.body.type === 'undefined' || typeof req.body.type !== 'string' || 
+  typeof req.body.capacity === 'undefined' || typeof req.body.capacity !== 'number') {
+    res.status(400).send({
+      'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
+    });
+  }
+
+  if (typeof req.header('authorization') === 'undefined') {
+    res.status(401).send({
+      'Error': 'No valid authorization token provided.'
+    });
+  } else {
+    const tokenH = req.header('authorization').split(' ');
+    const token = tokenH[1];
+    const ticket = client.verifyIdToken({
+      idToken: token,
+      audience: CLIENT_ID
+    }).then((ticket) => {
+      const payload = ticket.getPayload();
+      const userid = payload['sub'];
+
+      if (typeof userid === 'undefined') {
+        res.status(401).send({
+          'Error': 'No valid authorization token provided.'
+        });
+      }
+
+      get_vehicle(req.params.vehicle_id).then((vehicle) => {
+        if (typeof vehicle === 'undefined') {
+          res.status(404).send({
+            'Error': 'No vehicle with this vehicle_id exists'
+          });
+        } else {
+          if (vehicle.owner === userid) {
+            patch_vehicle(req.params.vehicle_id, vehicle.owner, vehicle, req.body).then(() => {
+              res.location(link + '/vehicles/' + req.params.vehicle_id);
+              res.status(201).end();
+            });
+          } else {
+            res.status(403).send({
+              'Error': 'Authorization token does not match user info.'
+            });
+          }
+        }
+      });
+    }).catch((error) => {
+      res.status(401).end();
+    })
+  }
 });
 
 // Update a vehicle requiring all params
 router.put('/:vehicle_id', (req, res) => {
-
+  
 });
 
 // Delete a vehicle, any loads loaded will be unloaded first
