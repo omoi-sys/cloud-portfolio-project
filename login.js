@@ -1,21 +1,14 @@
 const express = require('express');
-const handlebars = require('express-handlebars').create({defaultLayout: 'main'});
 const { google } = require('googleapis');
-const { OAuth2Cleint } = require('google-auth-library');
+const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 require('dotenv').config();
 const request = require('request');
-const app = express();
 
 const ds = require('./datastore');
 const datastore = ds.datastore;
 
 const router = express.Router();
-
-app.engine('handlebars', handlebars);
-app.set('view engine', 'handlebars');
-
-app.use(express.static('public'));
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -23,7 +16,7 @@ const SCOPE = process.env.SCOPE;
 const REDIRECT_URI = process.env.REDIRECT_URI;
 const DOMAIN = process.env.DOMAIN;
 
-const client = new OAuth2Cleint(CLIENT_ID);
+const client = new OAuth2Client(CLIENT_ID);
 
 const oauth2Client = new google.auth.OAuth2(
   CLIENT_ID,
@@ -36,7 +29,7 @@ const url = oauth2Client.generateAuthUrl({
   scope: SCOPE
 });
 
-port_user = (auth_id) => {
+post_user = (auth_id) => {
   let key = datastore.key('User');
   const new_user = {
     'auth_id': auth_id
@@ -64,7 +57,7 @@ router.get('/userinfo', (req, res) => {
     const ticket = client.verifyIdToken({
       idToken: tokens['tokens']['id_token'],
       audience: CLIENT_ID
-    }).then( (ticken) => {
+    }).then( (ticket) => {
       const payload = ticket.getPayload();
       const userid = payload['sub'];
       post_user(userid).then( (user_id) => {
