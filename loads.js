@@ -16,19 +16,19 @@ const LOAD = 'Load';
 
 // Add a load
 post_load = (weight, content) => {
-    let key = datastore.key(LOAD);
-    const new_load = { 'weight': weight, 'carrier': null, 'content': content, 'creation_date': global_date };
-    return datastore.save({ 'key': key, 'data': new_load }).then(() => {
-      let entity = {
-        'id': key.id,
-        'weight': weight,
-        'carrier': null,
-        'content': content,
-        'creation_date': global_date,
-        'self': link + '/loads/' + key.id.toString()
-      }
-      return entity;
-    });
+  let key = datastore.key(LOAD);
+  const new_load = { 'weight': weight, 'carrier': null, 'content': content, 'creation_date': global_date };
+  return datastore.save({ 'key': key, 'data': new_load }).then(() => {
+    let entity = {
+      'id': key.id,
+      'weight': weight,
+      'carrier': null,
+      'content': content,
+      'creation_date': global_date,
+      'self': link + '/loads/' + key.id.toString()
+    }
+    return entity;
+  });
 }
   
 // Get a specific load
@@ -149,7 +149,7 @@ router.get('/:load_id', (req, res) => {
     }
   });
 });
-  
+
 // GET all loads
 router.get('/', (req, res) => {
   const accepts = req.accepts(['application/json', '*/*']);
@@ -159,12 +159,74 @@ router.get('/', (req, res) => {
 
   const loads = get_loads(req).then( loads => {
     for(let i = 0; i < loads.loads.length; i++) {
-      loads.loads[i].self = req.protocol + '://' + req.get('host') + req.baseUrl + '/' + loads.loads[i].id.toString();
+      loads.loads[i].self = 'https://' + req.get('host') + req.baseUrl + '/' + loads.loads[i].id.toString();
     }
     res.status(200).json(loads);
   });
 });
-  
+
+router.patch('/:load_id', (req, res) => {
+  if (typeof req.body.id !== 'undefined') {
+    if (req.body.id.toString !== req.params.load_id) {
+      res.status(400).send({
+        'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
+      })
+    }
+  }
+
+  if (typeof req.body.weight !== 'undefined' && typeof req.body.weight !== 'number' ||
+  typeof req.body.content !== 'undefined' && typeof req.body.content !== 'string') {
+    res.status(400).send({
+      'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
+    });
+  }
+
+  const load = get_load(req.params.load_id).then((load) => {
+    if (typeof load === 'undefined') {
+      res.status(404).send({
+        'Error' : 'No load with this load_id exists'
+      });
+    }
+
+    patch_load(req.params.load_id, load, req.body).then(() => {
+      res.location(link + '/loads/' + req.params.load_id);
+      res.status(201).end();
+    });
+  });
+});
+
+
+// PUT a load
+router.put('/:load_id', (req, res) => {
+  if (typeof req.body.id !== 'undefined') {
+    if (req.body.id.toString !== req.params.load_id) {
+      res.status(400).send({
+        'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
+      });
+    }
+  }
+
+  if (typeof req.body.weight === 'undefined' || typeof req.body.weight !== 'number' ||
+  typeof req.body.content === 'undefined' || typeof req.body.content !== 'string') {
+    res.status(400).send({
+      'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
+    });
+  }
+
+  const load = get_load(req.params.load_id).then((load) => {
+    if (typeof load === 'undefined') {
+      res.status(404).send({
+        'Error': 'No load with this load_id exists'
+      });
+    }
+
+    put_load(req.params.load_id, req.body.weight, req.body.content, load).then(() => {
+      res.location(link + '/loads/' + req.params.load_id);
+      res.status(303).end();
+    });
+  })
+});
+
 // DELETE a load
 router.delete('/:load_id', (req, res) => {
   const load = get_load(req.params.load_id).then( entity => {
