@@ -1,7 +1,10 @@
 const express = require('express');
 const { OAuth2Client } = require('google-auth-library');
+const bodyParser = require('body-parser');
 require('dotenv').config();
 const router = express.Router();
+
+router.use(bodyParser.json());
 
 const ds = require('./datastore');
 const datastore = ds.datastore;
@@ -47,7 +50,7 @@ post_vehicle = (make, model, type, capacity, owner) => {
 get_vehicle = (vehicle_id) => {
   const key = datastore.key([VEHICLE, parseInt(vehicle_id, 10)]);
   return datastore.get(key).then( (data) => {
-    return ds.fromDatastore(data[0]);
+    return data[0];
   });
 }
 
@@ -177,7 +180,7 @@ router.post('/', (req, res) => {
   }
   const tokenH = req.header('authorization').split(' ');
   const token = tokenH[1];
-  const ticket = client.verifyIdToken({
+  client.verifyIdToken({
     idToken: token,
     audience: CLIENT_ID
   }).then((ticket) => {
@@ -209,6 +212,7 @@ router.post('/', (req, res) => {
       }
     }
   }).catch((error) => {
+    console.log(error);
     res.status(401).end();
   });
 });
@@ -235,12 +239,14 @@ router.get('/:vehicle_id', (req, res) => {
       res.status(401).end();
     }
     get_vehicle(req.params.vehicle_id).then( (vehicle) => {
-      if (typeof vehicle === null) {
+      if (typeof vehicle === 'undefined') {
         res.status(404).send({
           'Error': 'No vehicle with this vehicle_id exists'
         });
       } else {
         if (vehicle.owner === userid) {
+          ds.fromDatastore(vehicle);
+          // ADD SELF HERE
           res.status(200).json(vehicle);
         } else {
           res.status(403).send({
