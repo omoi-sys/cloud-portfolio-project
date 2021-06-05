@@ -131,6 +131,11 @@ router.post('/', (req, res) => {
   
 // GET a specific load
 router.get('/:load_id', (req, res) => {
+  const accepts = req.accepts(['application/json', 'text/html']);
+  if (!accepts) {
+    res.status(406).send('Not Acceptable');
+  }
+  
   const load = get_load(req.params.load_id).then( entity => {
     if (typeof entity === 'undefined') {
       const message = { "Error": "No load with this load_id exists" }
