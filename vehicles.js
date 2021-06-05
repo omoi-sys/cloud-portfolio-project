@@ -9,7 +9,8 @@ router.use(bodyParser.json());
 const ds = require('./datastore');
 const datastore = ds.datastore;
 
-const link = 'https://serratab-portfolio.wl.r.appspot.com'
+//const link = 'https://serratab-portfolio.wl.r.appspot.com'
+const link = 'http://localhost:8080'
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const VEHICLE = 'Vehicle';
@@ -164,7 +165,7 @@ remove_load = (vehicle, vehicle_id, load, load_id) => {
   
   datastore.save({ 'key': vehicle_key, 'data': vehicle }).then( entity => {
     return datastore.save({ 'key': load_key, 'data': load }).then( entity => {
-      return;
+      return entity;
     });
   });
 }

@@ -7,10 +7,11 @@ const datastore = ds.datastore;
 
 router.use(bodyParser.json());
 
-const link = 'https://serratab-portfolio.wl.r.appspot.com';
-//const link = 'localhost:8080';
+//const link = 'https://serratab-portfolio.wl.r.appspot.com';
+const link = 'http://localhost:8080';
 
 const LOAD = 'Load';
+const global_date = '06/05/2021';
 
 /* =============== Start of Model Functions =============== */
 
@@ -103,9 +104,10 @@ delete_load = (load_id, load) => {
         }
       }
       let vehicle_data = {
-        "name": vehicle[0].name,
+        "make": vehicle[0].make,
+        'model': vehicle[0].model,
         "type": vehicle[0].type,
-        "length": vehicle[0].length,
+        "capacity": vehicle[0].capacity,
         "loads": vehicle[0].loads
       };
       datastore.save({ 'key': bkey, 'data': vehicle_data });
@@ -144,8 +146,8 @@ router.get('/:load_id', (req, res) => {
       if (entity.carrier !== null) {
         entity.carrier.self = link + '/vehicles/' + entity.carrier['id'];
       }
-      data.self = link + '/loads/' + req.params.load_id.toString();
-      res.status(200).json(data);
+      entity.self = link + '/loads/' + req.params.load_id.toString();
+      res.status(200).json(entity);
     }
   });
 });
