@@ -9,8 +9,8 @@ router.use(bodyParser.json());
 const ds = require('./datastore');
 const datastore = ds.datastore;
 
-//const link = 'https://serratab-portfolio.wl.r.appspot.com'
-const link = 'http://localhost:8080'
+const link = 'https://serratab-portfolio.wl.r.appspot.com'
+//const link = 'http://localhost:8080'
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const VEHICLE = 'Vehicle';
@@ -50,7 +50,7 @@ post_vehicle = (make, model, type, capacity, owner) => {
 // Get a vehicle with its id
 get_vehicle = (vehicle_id) => {
   const key = datastore.key([VEHICLE, parseInt(vehicle_id, 10)]);
-  return datastore.get(key).then( (data) => {
+  return Promise.resolve(datastore.get(key)).then( (data) => {
     return data[0];
   });
 }
@@ -163,10 +163,19 @@ remove_load = (vehicle, vehicle_id, load, load_id) => {
   vehicle_key = datastore.key([VEHICLE, parseInt(vehicle_id, 10)]);
   load_key = datastore.key(['Load', parseInt(load_id, 10)]);
   
-  datastore.save({ 'key': vehicle_key, 'data': vehicle }).then( entity => {
+  return datastore.save({ 'key': vehicle_key, 'data': vehicle }).then( entity => {
     return datastore.save({ 'key': load_key, 'data': load }).then( entity => {
       return entity;
     });
+  });
+}
+
+verify = (token) => {
+  return client.verifyIdToken({
+    idToken: token,
+    audience: CLIENT_ID
+  }).then((ticket) => {
+    return ticket;
   });
 }
 
@@ -272,34 +281,31 @@ router.get('/', (req, res) => {
     res.status(401).send({
       'Error': 'No valid authorization token provided.'
     });
-  } else {
-    const tokenH = req.header('authorization').split(' ');
-    const token = tokenH[1];
-    const ticket = client.verifyIdToken({
-      idToken: token,
-      audience: CLIENT_ID
-    }).then((ticket) => {
-      const payload = ticket.getPayload();
-      const userid = payload['sub'];
-      if (typeof userid === 'undefined') {
-        res.status(401).send({
-          'Error': 'No valid authorization token provided.'
-        });
-      }
-      get_vehicles(req, userid).then((vehicles) => {
-        if (vehicles.vehicles.length === 0) {
-          res.status(403).send({
-            'Error': 'Authorization token does not match user info.'
-          });
-        }
-        res.status(200).send(vehicles);
-      });
-    }).catch((error) => {
+  }
+  
+  const tokenH = req.header('authorization').split(' ');
+  const token = tokenH[1];
+  const ticket = verify(token).then((ticket) => {
+    const payload = ticket.getPayload();
+    const userid = payload['sub'];
+    if (typeof userid === 'undefined') {
       res.status(401).send({
         'Error': 'No valid authorization token provided.'
       });
+    }
+    get_vehicles(req, userid).then((vehicles) => {
+      if (vehicles.vehicles.length === 0) {
+        res.status(403).send({
+          'Error': 'Authorization token does not match user info.'
+        });
+      }
+      res.status(200).send(vehicles);
     });
-  }
+  }).catch((error) => {
+    res.status(401).send({
+      'Error': 'No valid authorization token provided.'
+    });
+  });
 });
 
 
