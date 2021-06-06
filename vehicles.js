@@ -9,8 +9,8 @@ router.use(bodyParser.json());
 const ds = require('./datastore');
 const datastore = ds.datastore;
 
-const link = 'https://serratab-portfolio.wl.r.appspot.com'
-//const link = 'http://localhost:8080'
+//const link = 'https://serratab-portfolio.wl.r.appspot.com'
+const link = 'http://localhost:8080'
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const VEHICLE = 'Vehicle';
@@ -51,6 +51,9 @@ post_vehicle = (make, model, type, capacity, owner) => {
 get_vehicle = (vehicle_id) => {
   const key = datastore.key([VEHICLE, parseInt(vehicle_id, 10)]);
   return Promise.resolve(datastore.get(key)).then( (data) => {
+    if (typeof data[0] !== 'undefined') {
+      return ds.fromDatastore(data[0]);
+    }
     return data[0];
   });
 }
@@ -124,8 +127,8 @@ assign_load = (vehicle, vehicle_id, load, load_id) => {
   const load_key = datastore.key(['Load', parseInt(load_id, 10)]);
   const vehicle_key = datastore.key([VEHICLE, parseInt(vehicle_id, 10)]);
 
-  vehicle.loads.push(load_id);
-  load.carrier = vehicle_id;
+  vehicle.loads.push({ 'id': load_id });
+  load.carrier = { 'id': vehicle_id };
 
   return datastore.save({ 'key': load_key, 'data': load }).then(() => {
     return datastore.save({ 'key': vehicle_key, 'data': vehicle }).then(() => {return});
@@ -255,8 +258,12 @@ router.get('/:vehicle_id', (req, res) => {
         });
       } else {
         if (vehicle.owner === userid) {
-          ds.fromDatastore(vehicle);
-          // ADD SELF HERE
+          if (vehicle.loads.length > 0) {
+            for(let i = 0; i < vehicle.loads.length; i++) {
+              vehicle.loads[i].self = link + '/loads/' + vehicle.loads[i].id;
+            }
+          }
+          vehicle.self = link + '/vehicles/' + vehicle.id;
           res.status(200).json(vehicle);
         } else {
           res.status(403).send({
@@ -329,10 +336,18 @@ router.get('/:vehicle_id/loads', (req, res) => {
     }
     get_vehicle(req.params.vehicle_id).then((vehicle) => {
       if (typeof vehicle === 'undefined') {
-        res.status(404).end();
+        res.status(404).send({
+          'Error': 'No vehicle with this vehicle_id exists'
+        });
       } else {
         if (vehicle.owner === userid) {
-          res.status(200).send(vehicle);
+          let loads = vehicle.loads;
+          if (loads.length > 0) {
+            for(let i = 0; i < loads.length; i++) {
+              loads[i].self = link + '/loads/' + loads[i].id;
+            }
+          }
+          res.status(200).json(loads);
         } else {
           res.status(403).send({
             'Error': 'Authorization token does not match user info.'
@@ -482,10 +497,7 @@ router.delete('/:vehicle_id', (req, res) => {
 
   const tokenH = req.header('authorization').split(' ');
   const token = tokenH[1];
-  const ticket = client.verifyIdToken({
-    idToken: token,
-    audience: CLIENT_ID
-  }).then( (ticket) => {
+  const ticket = verify(token).then( (ticket) => {
     const payload = ticket.getPayload();
     const userid = payload['sub'];
     
@@ -514,7 +526,7 @@ router.delete('/:vehicle_id', (req, res) => {
     }
   }).catch((error) => {
     res.status(401).end();
-  })
+  });
 });
 
 // Method Not Allowed
@@ -605,7 +617,7 @@ router.delete('/:vehicle_id/loads/:load_id', (req, res) => {
     get_vehicle(req.params.vehicle_id).then((vehicle) => {
       if (typeof vehicle === 'undefined') {
         res.status(404).send({
-          'Error': 'No load with this load_id assigned to the vehicle with this vehicle_id'
+          'Error': 'The specified vehicle and/or load does not exist'
         });
       }
 
@@ -618,13 +630,13 @@ router.delete('/:vehicle_id/loads/:load_id', (req, res) => {
             });
           }
 
-          if (load[0].carrier === req.params.vehicle_id) {
+          if (load[0].carrier !== null && load[0].carrier.id === req.params.vehicle_id) {
             remove_load(vehicle, req.params.vehicle_id, load[0], req.params.load_id).then(() => {
               res.status(204).end();
             });
           } else {
             res.status(404).send({
-              'Error': 'No load with this load_id assigned to the vehicle with this vehicle_id'
+              'Error': 'The specified vehicle and/or load does not exist'
             });
           }
         });

@@ -7,25 +7,34 @@ const datastore = ds.datastore;
 
 router.use(bodyParser.json());
 
-const link = 'https://serratab-portfolio.wl.r.appspot.com';
-//const link = 'http://localhost:8080';
+//const link = 'https://serratab-portfolio.wl.r.appspot.com';
+const link = 'http://localhost:8080';
 
 const LOAD = 'Load';
-const global_date = '06/05/2021';
+
+get_date = () => {
+  let date = new Date();
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+
+  date = mm + '/' + dd + '/' + yyyy;
+  return date;
+}
 
 /* =============== Start of Model Functions =============== */
 
 // Add a load
 post_load = (weight, content) => {
   let key = datastore.key(LOAD);
-  const new_load = { 'weight': weight, 'carrier': null, 'content': content, 'creation_date': global_date };
+  const new_load = { 'weight': weight, 'carrier': null, 'content': content, 'creation_date': get_date() };
   return datastore.save({ 'key': key, 'data': new_load }).then(() => {
     let entity = {
       'id': key.id,
       'weight': weight,
       'carrier': null,
       'content': content,
-      'creation_date': global_date,
+      'creation_date': get_date(),
       'self': link + '/loads/' + key.id.toString()
     }
     return entity;
@@ -36,6 +45,9 @@ post_load = (weight, content) => {
 get_load = (load_id) => {
   const key = datastore.key([LOAD, parseInt(load_id, 10)]);
   return datastore.get(key).then((data) => {
+    if (typeof data[0] !== 'undefined') {
+      return ds.fromDatastore(data[0]);
+    }
     return data[0];
   });
 }
@@ -95,8 +107,8 @@ put_load = (load_id, weight, content, load) => {
 delete_load = (load_id, load) => {
   const key = datastore.key([LOAD, parseInt(load_id, 10)]);
   if (load.carrier !== null) {
-    const bkey = datastore.key(['Vehicle', parseInt(load.carrier.id, 10)]);
-    datastore.get(bkey).then(vehicle => {
+    const vehicle_key = datastore.key(['Vehicle', parseInt(load.carrier.id, 10)]);
+    datastore.get(vehicle_key).then((vehicle) => {
       for(let i = 0; i < vehicle[0].loads.length; i++) {
         if (vehicle[0].loads[i].id === load_id) {
           vehicle[0].loads.splice(i, 1);
@@ -108,9 +120,10 @@ delete_load = (load_id, load) => {
         'model': vehicle[0].model,
         "type": vehicle[0].type,
         "capacity": vehicle[0].capacity,
+        "owner": vehicle[0].owner,
         "loads": vehicle[0].loads
       };
-      datastore.save({ 'key': bkey, 'data': vehicle_data });
+      datastore.save({ 'key': vehicle_key, 'data': vehicle_data });
     });
   }
   return datastore.delete(key);
