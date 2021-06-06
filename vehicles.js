@@ -301,11 +301,6 @@ router.get('/', (req, res) => {
       });
     }
     get_vehicles(req, userid).then((vehicles) => {
-      if (vehicles.vehicles.length === 0) {
-        res.status(403).send({
-          'Error': 'Authorization token does not match user info.'
-        });
-      }
       res.status(200).send(vehicles);
     });
   }).catch((error) => {
