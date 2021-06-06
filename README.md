@@ -3,6 +3,7 @@
 ## Data Models
 Users
 |id|auth_id|
+|--|-------|
 |1213|622321|
 
 Vehicles
