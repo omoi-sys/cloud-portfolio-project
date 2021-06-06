@@ -73,15 +73,15 @@ patch_load = (load_id, load, body) => {
   const key = datastore.key([LOAD, parseInt(load_id, 10)]);
   let up_load = {};
   if (typeof body.weight === 'undefined') {
-    up_load.name = load.name;
+    up_load.weight = load.weight;
   } else {
-    up_load.name = body.name;
+    up_load.weight = body.weight;
   }
   
   if (typeof body.content !== 'undefined') {
-    up_load.type = body.type;
+    up_load.content = body.content;
   } else {
-    up_load.type = load.type;
+    up_load.content = load.content;
   }
   
   up_load.carrier = load.carrier;
@@ -192,26 +192,28 @@ router.patch('/:load_id', (req, res) => {
       })
     }
   }
+  console.log(req.body.weight);
+  console.log(typeof req.body.weight);
 
   if (typeof req.body.weight !== 'undefined' && typeof req.body.weight !== 'number' ||
   typeof req.body.content !== 'undefined' && typeof req.body.content !== 'string') {
     res.status(400).send({
       'Error': 'The request object is missing at least one of the required attributes or an attempt to change the id was made'
     });
-  }
-
-  const load = get_load(req.params.load_id).then((load) => {
-    if (typeof load === 'undefined') {
-      res.status(404).send({
-        'Error' : 'No load with this load_id exists'
+  } else {
+    const load = get_load(req.params.load_id).then((load) => {
+      if (typeof load === 'undefined') {
+        res.status(404).send({
+          'Error' : 'No load with this load_id exists'
+        });
+      }
+  
+      patch_load(req.params.load_id, load, req.body).then(() => {
+        res.location(link + '/loads/' + req.params.load_id);
+        res.status(201).end();
       });
-    }
-
-    patch_load(req.params.load_id, load, req.body).then(() => {
-      res.location(link + '/loads/' + req.params.load_id);
-      res.status(201).end();
     });
-  });
+  }
 });
 
 
