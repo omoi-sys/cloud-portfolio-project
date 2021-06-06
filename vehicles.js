@@ -582,6 +582,10 @@ router.put('/:vehicle_id/loads/:load_id', (req, res) => {
             });
           }
         });
+      } else {
+        res.status(403).json({
+          'Error': 'Authorization token does not match user info.'
+        });
       }
     });
   }).catch((error) => {
@@ -634,6 +638,10 @@ router.delete('/:vehicle_id/loads/:load_id', (req, res) => {
               'Error': 'The specified vehicle and/or load does not exist'
             });
           }
+        });
+      } else {
+        res.status(403).json({
+          'Error': 'Authorization token does not match user info.'
         });
       }
     });

@@ -192,8 +192,6 @@ router.patch('/:load_id', (req, res) => {
       })
     }
   }
-  console.log(req.body.weight);
-  console.log(typeof req.body.weight);
 
   if (typeof req.body.weight !== 'undefined' && typeof req.body.weight !== 'number' ||
   typeof req.body.content !== 'undefined' && typeof req.body.content !== 'string') {
