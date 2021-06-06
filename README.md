@@ -4,6 +4,4 @@
 Vehicles
 |id|make|model|type|capacity|owner|loads|
 |--|----|-----|----|--------|-----|-----|
-|1928|Honda|CR-V|SUV|1500|8271|[
-    {"id": "13223"}
-]|
+|1928|Honda|CR-V|SUV|1500|8271|[{"id": "13223"}]|
