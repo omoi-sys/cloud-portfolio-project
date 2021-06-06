@@ -469,7 +469,7 @@ router.put('/:vehicle_id', (req, res) => {
           if (vehicle.owner === userid) {
             put_vehicle(req.params.vehicle_id, req.body.make, req.body.model, req.body.type, req.body.capacity, userid, vehicle.loads).then( (vehicle) => {
               res.location(link + '/vehicles/' + vehicle.id);
-              res.status(303).send(vehicle);
+              res.status(303).end();
             });
           } else {
             res.status(403).send({

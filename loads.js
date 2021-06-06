@@ -135,6 +135,10 @@ delete_load = (load_id, load) => {
   
 // POST a new load
 router.post('/', (req, res) => {
+  if (typeof req.body.weight === 'undefined' || typeof req.body.weight !== 'number' ||
+  typeof req.body.content === 'undefined' || typeof req.body.content !== 'string') {
+    res.status(400).send({"Error": "The request object is missing at least one of the required attributes"});
+  }
   if (Object.keys(req.body).length < 2) {
     res.status(400).send({"Error": "The request object is missing at least one of the required attributes"});
   } else {
