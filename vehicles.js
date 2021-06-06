@@ -60,7 +60,7 @@ get_vehicle = (vehicle_id) => {
 
 // Get all vehicles
 get_vehicles = (req, owner) => {
-  let query = datastore.createQuery(VEHICLE).limit(5);
+  let query = datastore.createQuery(VEHICLE).filter('owner', '=', owner).limit(5);
   let results = {};
   if (Object.keys(req.query).includes('cursor')) {
     query = query.start(req.query.cursor);
