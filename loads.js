@@ -14,7 +14,7 @@ const LOAD = 'Load';
 
 get_date = () => {
   let date = new Date();
-  const dd = String(date.getDate()).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const yyyy = date.getFullYear();
 
@@ -28,7 +28,7 @@ get_date = () => {
 post_load = (weight, content) => {
   let key = datastore.key(LOAD);
   const new_load = { 'weight': weight, 'carrier': null, 'content': content, 'creation_date': get_date() };
-  return datastore.save({ 'key': key, 'data': new_load }).then(() => {
+  return Promise.resolve(datastore.save({ 'key': key, 'data': new_load })).then(() => {
     let entity = {
       'id': key.id,
       'weight': weight,
@@ -44,7 +44,7 @@ post_load = (weight, content) => {
 // Get a specific load
 get_load = (load_id) => {
   const key = datastore.key([LOAD, parseInt(load_id, 10)]);
-  return datastore.get(key).then((data) => {
+  return Promise.resolve(datastore.get(key)).then((data) => {
     if (typeof data[0] !== 'undefined') {
       return ds.fromDatastore(data[0]);
     }
@@ -59,7 +59,7 @@ get_loads = (req) => {
   if(Object.keys(req.query).includes('cursor')) {
     query = query.start(req.query.cursor);
   }
-  return datastore.runQuery(query).then((entities) => {
+  return Promise.resolve(datastore.runQuery(query)).then((entities) => {
     results.loads = entities[0].map(ds.fromDatastore);
     if(entities[1].moreResults != ds.Datastore.NO_MORE_RESULTS) {
       results.next = req.protocol + '://' + req.get('host') + req.baseUrl + '?cursor=' + entities[1].endCursor;
@@ -87,7 +87,7 @@ patch_load = (load_id, load, body) => {
   up_load.carrier = load.carrier;
   up_load.creation_date = load.creation_date;
   
-  return datastore.save({ 'key': key, 'data': up_load });
+  return Promise.resolve(datastore.save({ 'key': key, 'data': up_load }));
 }
 
 // Update load through PUT
@@ -99,7 +99,7 @@ put_load = (load_id, weight, content, load) => {
     'carrier': load.carrier,
     'creation_date': load.creation_date
   };
-  return datastore.save({ 'key': key, 'data': up_load });
+  return Promise.resolve(datastore.save({ 'key': key, 'data': up_load }));
 }
   
   
@@ -126,7 +126,7 @@ delete_load = (load_id, load) => {
       datastore.save({ 'key': vehicle_key, 'data': vehicle_data });
     });
   }
-  return datastore.delete(key);
+  return Promise.resolve(datastore.delete(key));
 }
   
 /* =============== End of Model Functions ================= */
@@ -204,12 +204,12 @@ router.patch('/:load_id', (req, res) => {
         res.status(404).send({
           'Error' : 'No load with this load_id exists'
         });
+      } else {
+        patch_load(req.params.load_id, load, req.body).then(() => {
+          res.location(link + '/loads/' + req.params.load_id);
+          res.status(201).end();
+        });
       }
-  
-      patch_load(req.params.load_id, load, req.body).then(() => {
-        res.location(link + '/loads/' + req.params.load_id);
-        res.status(201).end();
-      });
     });
   }
 });
@@ -237,13 +237,13 @@ router.put('/:load_id', (req, res) => {
       res.status(404).send({
         'Error': 'No load with this load_id exists'
       });
+    } else {
+      put_load(req.params.load_id, req.body.weight, req.body.content, load).then(() => {
+        res.location(link + '/loads/' + req.params.load_id);
+        res.status(303).end();
+      });
     }
-
-    put_load(req.params.load_id, req.body.weight, req.body.content, load).then(() => {
-      res.location(link + '/loads/' + req.params.load_id);
-      res.status(303).end();
-    });
-  })
+  });
 });
 
 // DELETE a load

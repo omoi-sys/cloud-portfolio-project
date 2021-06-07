@@ -65,7 +65,7 @@ get_vehicles = (req, owner) => {
   if (Object.keys(req.query).includes('cursor')) {
     query = query.start(req.query.cursor);
   }
-  return datastore.runQuery(query).then( (entities) => {
+  return Promise.resolve(datastore.runQuery(query)).then( (entities) => {
     results.vehicles = entities[0].map(ds.fromDatastore);
     if (entities[1].moreResults !== ds.Datastore.NO_MORE_RESULTS) {
       results.next = 'https://' + req.get('host') + req.baseUrl + '?cursor=' + entities[1].endCursor;
@@ -106,7 +106,7 @@ patch_vehicle = (vehicle_id, owner, vehicle, body) => {
   update_vehicle.owner = owner;
   update_vehicle.loads = vehicle.loads;
 
-  return datastore.save({ 'key': key, 'data': update_vehicle });
+  return Promise.resolve(datastore.save({ 'key': key, 'data': update_vehicle }));
 }
 
 // Update a vehicle with PUT
@@ -120,7 +120,7 @@ put_vehicle = (vehicle_id, make, model, type, capacity, owner, loads) => {
     'owner': owner,
     'loads': loads
   };
-  return datastore.save({ 'key': key, 'data': update_vehicle });
+  return Promise.resolve(datastore.save({ 'key': key, 'data': update_vehicle }));
 }
 
 assign_load = (vehicle, vehicle_id, load, load_id) => {
@@ -130,7 +130,7 @@ assign_load = (vehicle, vehicle_id, load, load_id) => {
   vehicle.loads.push({ 'id': load_id });
   load.carrier = { 'id': vehicle_id };
 
-  return datastore.save({ 'key': load_key, 'data': load }).then(() => {
+  return Promise.resolve(datastore.save({ 'key': load_key, 'data': load })).then(() => {
     return datastore.save({ 'key': vehicle_key, 'data': vehicle }).then(() => {return});
   });
 }
@@ -154,7 +154,7 @@ delete_vehicle = (vehicle_id, vehicle) => {
     }
   }
   const key = datastore.key([VEHICLE, parseInt(vehicle_id, 10)]);
-  return datastore.delete(key);
+  return Promise.resolve(datastore.delete(key));
 }
 
 // Updates the vehicle and load to not be related to each other anymore
@@ -166,7 +166,7 @@ remove_load = (vehicle, vehicle_id, load, load_id) => {
   vehicle_key = datastore.key([VEHICLE, parseInt(vehicle_id, 10)]);
   load_key = datastore.key(['Load', parseInt(load_id, 10)]);
   
-  return datastore.save({ 'key': vehicle_key, 'data': vehicle }).then( entity => {
+  return Promise.resolve(datastore.save({ 'key': vehicle_key, 'data': vehicle })).then( entity => {
     return datastore.save({ 'key': load_key, 'data': load }).then( entity => {
       return entity;
     });
@@ -449,17 +449,17 @@ router.put('/:vehicle_id', (req, res) => {
             res.status(404).send({
               'Error': 'No vehicle with this vehicle_id exists'
             });
-          }
-
-          if (vehicle.owner === userid) {
-            put_vehicle(req.params.vehicle_id, req.body.make, req.body.model, req.body.type, req.body.capacity, userid, vehicle.loads).then( (vehicle) => {
-              res.location(link + '/vehicles/' + vehicle.id);
-              res.status(303).end();
-            });
           } else {
-            res.status(403).send({
-              'Error': 'Authorization token does not match user info.'
-            });
+            if (vehicle.owner === userid) {
+              put_vehicle(req.params.vehicle_id, req.body.make, req.body.model, req.body.type, req.body.capacity, userid, vehicle.loads).then( (vehicle) => {
+                res.location(link + '/vehicles/' + vehicle.id);
+                res.status(303).end();
+              });
+            } else {
+              res.status(403).send({
+                'Error': 'Authorization token does not match user info.'
+              });
+            }
           }
         });
       }
@@ -491,16 +491,16 @@ router.delete('/:vehicle_id', (req, res) => {
           res.status(404).send({
             'Error': 'No vehicle with this vehicle_id exists'
           });
-        }
-  
-        if (vehicle.owner === userid) {
-          delete_vehicle(req.params.vehicle_id, vehicle).then(() => {
-            res.status(204).end();
-          });
         } else {
-          res.status(403).send({
-            'Error': 'Authorization token does not match user info.'
-          });
+          if (vehicle.owner === userid) {
+            delete_vehicle(req.params.vehicle_id, vehicle).then(() => {
+              res.status(204).end();
+            });
+          } else {
+            res.status(403).send({
+              'Error': 'Authorization token does not match user info.'
+            });
+          }
         }
       });
     }
@@ -543,31 +543,31 @@ router.put('/:vehicle_id/loads/:load_id', (req, res) => {
         res.status(404).send({
           'Error': 'The specified vehicle and/or load does not exist'
         });
-      }
-
-      if (vehicle.owner === userid) {
-        const load_key = datastore.key(['Load', parseInt(req.params.load_id, 10)]);
-        const load = datastore.get(load_key).then( load => {
-          if (typeof load[0] === 'undefined') {
-            res.status(404).send({
-              'Error': 'The specified vehicle and/or load does not exist'
-            });
-          }
-
-          if (load[0].carrier === null) {
-            assign_load(vehicle, req.params.vehicle_id, load[0], req.params.load_id).then(() => {
-              res.status(204).end();
-            });
-          } else {
-            res.status(403).send({
-              'Error': 'The load must be removed from vehicle first'
-            });
-          }
-        });
       } else {
-        res.status(403).json({
-          'Error': 'Authorization token does not match user info.'
-        });
+        if (vehicle.owner === userid) {
+          const load_key = datastore.key(['Load', parseInt(req.params.load_id, 10)]);
+          const load = datastore.get(load_key).then( load => {
+            if (typeof load[0] === 'undefined') {
+              res.status(404).send({
+                'Error': 'The specified vehicle and/or load does not exist'
+              });
+            }
+  
+            if (load[0].carrier === null) {
+              assign_load(vehicle, req.params.vehicle_id, load[0], req.params.load_id).then(() => {
+                res.status(204).end();
+              });
+            } else {
+              res.status(403).send({
+                'Error': 'The load must be removed from vehicle first'
+              });
+            }
+          });
+        } else {
+          res.status(403).json({
+            'Error': 'Authorization token does not match user info.'
+          });
+        }
       }
     });
   }).catch((error) => {
@@ -597,31 +597,31 @@ router.delete('/:vehicle_id/loads/:load_id', (req, res) => {
         res.status(404).send({
           'Error': 'The specified vehicle and/or load does not exist'
         });
-      }
-
-      if (vehicle.owner === userid) {
-        const load_key = datastore.key(['Load', parseInt(req.params.load_id, 10)]);
-        const load = datastore.get(load_key).then( load => {
-          if (typeof load[0] === 'undefined') {
-            res.status(404).send({
-              'Error': 'The specified vehicle and/or load does not exist'
-            });
-          }
-
-          if (load[0].carrier !== null && load[0].carrier.id === req.params.vehicle_id) {
-            remove_load(vehicle, req.params.vehicle_id, load[0], req.params.load_id).then(() => {
-              res.status(204).end();
-            });
-          } else {
-            res.status(404).send({
-              'Error': 'The specified vehicle and/or load does not exist'
-            });
-          }
-        });
       } else {
-        res.status(403).json({
-          'Error': 'Authorization token does not match user info.'
-        });
+        if (vehicle.owner === userid) {
+          const load_key = datastore.key(['Load', parseInt(req.params.load_id, 10)]);
+          const load = datastore.get(load_key).then( load => {
+            if (typeof load[0] === 'undefined') {
+              res.status(404).send({
+                'Error': 'The specified vehicle and/or load does not exist'
+              });
+            } else {
+              if (load[0].carrier !== null && load[0].carrier.id === req.params.vehicle_id) {
+                remove_load(vehicle, req.params.vehicle_id, load[0], req.params.load_id).then(() => {
+                  res.status(204).end();
+                });
+              } else {
+                res.status(404).send({
+                  'Error': 'The specified vehicle and/or load does not exist'
+                });
+              }
+            }
+          });
+        } else {
+          res.status(403).json({
+            'Error': 'Authorization token does not match user info.'
+          });
+        }
       }
     });
   }).catch((error) => {
