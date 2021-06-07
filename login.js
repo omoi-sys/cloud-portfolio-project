@@ -29,6 +29,16 @@ const url = oauth2Client.generateAuthUrl({
   scope: SCOPE
 });
 
+check_user = (auth_id) => {
+  const query = datastore.createQuery('User').filter('auth_id', '=', auth_id);
+  return datastore.runQuery(query).then((user) => {
+    if (typeof user[0][0] !== 'undefined') {
+      return ds.fromDatastore(user[0][0]);
+    }
+    return user[0][0];
+  });
+}
+
 post_user = (auth_id) => {
   let key = datastore.key('User');
   const new_user = {
@@ -60,8 +70,15 @@ router.get('/userinfo', (req, res) => {
     }).then( (ticket) => {
       const payload = ticket.getPayload();
       const userid = payload['sub'];
-      post_user(userid).then( (user_id) => {
-        res.render('main', { layout: 'greeting', jwt: tokens['tokens']['id_token'], userid: user_id});
+      
+      check_user(userid).then((user) => {
+        if (typeof user === 'undefined') {
+          post_user(userid).then( (user_id) => {
+            res.render('main', { layout: 'greeting', jwt: tokens['tokens']['id_token'], userid: user_id});
+          });
+        } else {
+          res.render('main', { layout: 'greeting', jwt: tokens['tokens']['id_token'], userid: user.id});
+        }
       });
     });
   });

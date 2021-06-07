@@ -174,12 +174,12 @@ remove_load = (vehicle, vehicle_id, load, load_id) => {
 }
 
 verify = (token) => {
-  return client.verifyIdToken({
+  return Promise.resolve(client.verifyIdToken({
     idToken: token,
     audience: CLIENT_ID
   }).then((ticket) => {
     return ticket;
-  });
+  }));
 }
 
 /* =============== End of Model Functions ================= */
@@ -193,10 +193,7 @@ router.post('/', (req, res) => {
   }
   const tokenH = req.header('authorization').split(' ');
   const token = tokenH[1];
-  client.verifyIdToken({
-    idToken: token,
-    audience: CLIENT_ID
-  }).then((ticket) => {
+  const ticket = verify(token).then((ticket) => {
     const payload = ticket.getPayload();
     const userid = payload['sub'];
     if (typeof userid === 'undefined') {
@@ -242,10 +239,7 @@ router.get('/:vehicle_id', (req, res) => {
 
   const tokenH = req.header('authorization').split(' ');
   const token = tokenH[1];
-  const ticket = client.verifyIdToken({
-    idToken: token,
-    audience: CLIENT_ID
-  }).then((ticket) => {
+  const ticket = verify(token).then((ticket) => {
     const payload = ticket.getPayload();
     const userid = payload['sub'];
     if (typeof userid === 'undefined') {
@@ -320,10 +314,7 @@ router.get('/:vehicle_id/loads', (req, res) => {
 
   const tokenH = req.header('authorization').split(' ');
   const token = tokenH[1];
-  const ticket = client.verifyIdToken({
-    idToken: token,
-    audience: CLIENT_ID
-  }).then((ticket) => {
+  const ticket = verify(token).then((ticket) => {
     const payload = ticket.getPayload();
     const userid = payload['sub'];
     if (typeof userid === 'undefined') {
@@ -381,10 +372,7 @@ router.patch('/:vehicle_id', (req, res) => {
   } else {
     const tokenH = req.header('authorization').split(' ');
     const token = tokenH[1];
-    const ticket = client.verifyIdToken({
-      idToken: token,
-      audience: CLIENT_ID
-    }).then((ticket) => {
+    const ticket = verify(token).then((ticket) => {
       const payload = ticket.getPayload();
       const userid = payload['sub'];
 
@@ -434,10 +422,7 @@ router.put('/:vehicle_id', (req, res) => {
 
   const tokenH = req.header('authorization').split(' ');
   const token = tokenH[1];
-  const ticket = client.verifyIdToken({
-    idToken: token,
-    audience: CLIENT_ID
-  }).then((ticket) => {
+  const ticket = verify(token).then((ticket) => {
     const payload = ticket.getPayload();
     const userid = payload['sub'];
     if (typeof userid === 'undefined') {
@@ -544,10 +529,7 @@ router.put('/:vehicle_id/loads/:load_id', (req, res) => {
 
   const tokenH = req.header('authorization').split(' ');
   const token = tokenH[1];
-  const ticket = client.verifyIdToken({
-    idToken: token,
-    audience: CLIENT_ID
-  }).then((ticket) => {
+  const ticket = verify(token).then((ticket) => {
     const payload = ticket.getPayload();
     const userid = payload['sub'];
     if (typeof userid === 'undefined') {
@@ -601,10 +583,7 @@ router.delete('/:vehicle_id/loads/:load_id', (req, res) => {
 
   const tokenH = req.header('authorization').split(' ');
   const token = tokenH[1];
-  const ticket = client.verifyIdToken({
-    idToken: token,
-    audience: CLIENT_ID
-  }).then((ticket) => {
+  const ticket = verify(token).then((ticket) => {
     const payload = ticket.getPayload();
     const userid = payload['sub'];
     if (typeof userid === 'undefined') {
