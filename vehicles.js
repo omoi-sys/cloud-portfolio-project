@@ -191,7 +191,9 @@ verify = (token) => {
 // POST route
 router.post('/', (req, res) => {
   if (typeof req.header('authorization') === 'undefined') {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   }
   const tokenH = req.header('authorization').split(' ');
   const token = tokenH[1];
@@ -224,8 +226,9 @@ router.post('/', (req, res) => {
       }
     }
   }).catch((error) => {
-    console.log(error);
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   });
 });
 
@@ -237,7 +240,9 @@ router.get('/:vehicle_id', (req, res) => {
   }
 
   if (typeof req.header('authorization') === 'undefined') {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   }
 
   const tokenH = req.header('authorization').split(' ');
@@ -246,7 +251,9 @@ router.get('/:vehicle_id', (req, res) => {
     const payload = ticket.getPayload();
     const userid = payload['sub'];
     if (typeof userid === 'undefined') {
-      res.status(401).end();
+      res.status(401).send({
+        "Error":  "No valid authorization token provided."
+      });
     }
     get_vehicle(req.params.vehicle_id).then( (vehicle) => {
       if (typeof vehicle === 'undefined') {
@@ -270,7 +277,9 @@ router.get('/:vehicle_id', (req, res) => {
       }
     });
   }).catch((error) => {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   })
 });
 
@@ -321,7 +330,9 @@ router.get('/:vehicle_id/loads', (req, res) => {
     const payload = ticket.getPayload();
     const userid = payload['sub'];
     if (typeof userid === 'undefined') {
-      res.status(401).end();
+      res.status(401).send({
+        "Error":  "No valid authorization token provided."
+      });
     }
     get_vehicle(req.params.vehicle_id).then((vehicle) => {
       if (typeof vehicle === 'undefined') {
@@ -345,7 +356,9 @@ router.get('/:vehicle_id/loads', (req, res) => {
       }
     });
   }).catch((error) => {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   })
 });
 
@@ -404,7 +417,9 @@ router.patch('/:vehicle_id', (req, res) => {
         }
       });
     }).catch((error) => {
-      res.status(401).end();
+      res.status(401).send({
+        "Error":  "No valid authorization token provided."
+      });
     })
   }
 });
@@ -412,7 +427,9 @@ router.patch('/:vehicle_id', (req, res) => {
 // Update a vehicle requiring all params
 router.put('/:vehicle_id', (req, res) => {
   if (typeof req.header('authorization') === 'undefined') {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   }
 
   if (typeof req.body.id !== 'undefined') {
@@ -468,14 +485,18 @@ router.put('/:vehicle_id', (req, res) => {
       }
     }
   }).catch((error) => {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   });
 });
 
 // Delete a vehicle, any loads loaded will be unloaded first
 router.delete('/:vehicle_id', (req, res) => {
   if (typeof req.header('authorization') === 'undefined') {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   }
 
   const tokenH = req.header('authorization').split(' ');
@@ -508,7 +529,9 @@ router.delete('/:vehicle_id', (req, res) => {
       });
     }
   }).catch((error) => {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   });
 });
 
@@ -527,7 +550,9 @@ router.put('/', (req, res) => {
 // Assign a load to a vehicle
 router.put('/:vehicle_id/loads/:load_id', (req, res) => {
   if (typeof req.header('authorization') === 'undefined') {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   }
 
   const tokenH = req.header('authorization').split(' ');
@@ -574,14 +599,18 @@ router.put('/:vehicle_id/loads/:load_id', (req, res) => {
       }
     });
   }).catch((error) => {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   });
 });
 
 // Unassign a load from a vehicle
 router.delete('/:vehicle_id/loads/:load_id', (req, res) => {
   if (typeof req.header('authorization') === 'undefined') {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   }
 
   const tokenH = req.header('authorization').split(' ');
@@ -628,7 +657,9 @@ router.delete('/:vehicle_id/loads/:load_id', (req, res) => {
       }
     });
   }).catch((error) => {
-    res.status(401).end();
+    res.status(401).send({
+      "Error":  "No valid authorization token provided."
+    });
   });
 });
 
