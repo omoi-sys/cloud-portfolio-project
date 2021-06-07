@@ -29,6 +29,7 @@ const url = oauth2Client.generateAuthUrl({
   scope: SCOPE
 });
 
+// Look for user
 check_user = (auth_id) => {
   const query = datastore.createQuery('User').filter('auth_id', '=', auth_id);
   return datastore.runQuery(query).then((user) => {
@@ -39,6 +40,7 @@ check_user = (auth_id) => {
   });
 }
 
+// Save user to database
 post_user = (auth_id) => {
   let key = datastore.key('User');
   const new_user = {

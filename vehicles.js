@@ -123,6 +123,7 @@ put_vehicle = (vehicle_id, make, model, type, capacity, owner, loads) => {
   return Promise.resolve(datastore.save({ 'key': key, 'data': update_vehicle }));
 }
 
+// Assign load to a vehicle
 assign_load = (vehicle, vehicle_id, load, load_id) => {
   const load_key = datastore.key(['Load', parseInt(load_id, 10)]);
   const vehicle_key = datastore.key([VEHICLE, parseInt(vehicle_id, 10)]);
@@ -173,6 +174,7 @@ remove_load = (vehicle, vehicle_id, load, load_id) => {
   });
 }
 
+// Verify the JWT
 verify = (token) => {
   return Promise.resolve(client.verifyIdToken({
     idToken: token,
@@ -227,6 +229,7 @@ router.post('/', (req, res) => {
   });
 });
 
+// Get specific vehicle, token protected
 router.get('/:vehicle_id', (req, res) => {
   const accepts = req.accepts(['application/json', '*/*']);
   if (!accepts) {
