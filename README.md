@@ -9,6 +9,7 @@ Final project, an API with following operations:
 - Assign a load to a vehicle
 - Removed a load from a vehicle
 - Delete a vehicle
+
 All of the above are protected by a token check. A JWT is provided on the front-end to use.
 
 - Add a load
@@ -16,6 +17,7 @@ All of the above are protected by a token check. A JWT is provided on the front-
 - Get all loads
 - Update a load
 - Delete a load
+
 The load endpoints do not need a token to use.
 
 ## Data Models
