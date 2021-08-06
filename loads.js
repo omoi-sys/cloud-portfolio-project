@@ -7,7 +7,7 @@ const datastore = ds.datastore;
 
 router.use(bodyParser.json());
 
-const link = 'https://serratab-portfolio.wl.r.appspot.com';
+const link = 'https://asm-cloud-api.wl.r.appspot.com';
 //const link = 'http://localhost:8080';
 
 const LOAD = 'Load';
